@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSec: Cyber Operator v2.0</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#030305', 
+                            dark: '#0a0a0f',
+                            panel: 'rgba(20, 20, 35, 0.6)',
+                            border: 'rgba(0, 243, 255, 0.2)',
+                            cyan: '#00f3ff',
+                            cyanDim: 'rgba(0, 243, 255, 0.1)',
+                            purple: '#bc13fe',
+                            purpleDim: 'rgba(188, 19, 254, 0.1)',
+                            red: '#ff2a6d',
+                            green: '#00ff9f',
+                            yellow: '#fcee0a',
+                            orange: '#ff9f1c'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Rajdhani', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'spin-slow': 'spin 12s linear infinite',
+                        'pulse-fast': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scan 4s linear infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'blink': 'blink 1s step-end infinite'
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        blink: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* --- GLOBAL STYLES --- */
+        body {
+            background-color: #030305;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        /* --- SCANLINES --- */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; w-full; h-full;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
+            width: 100%; height: 100%;
+        }
+
+        /* --- CYBER GRID --- */
+        .cyber-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(188, 19, 254, 0.05) 0%, transparent 60%),
+                linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            transform: perspective(1000px) rotateX(60deg) translateY(-100px) scale(2);
+            animation: gridMove 60s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: perspective(1000px) rotateX(60deg) translateY(0) scale(2); }
+            100% { transform: perspective(1000px) rotateX(60deg) translateY(40px) scale(2); }
+        }
+
+        /* --- COMPONENTS --- */
+        .glass-panel {
+            background: rgba(10, 12, 18, 0.7);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--cyber-border);
+        }
+
+        .cyber-card {
+            background: linear-gradient(145deg, rgba(20, 25, 35, 0.4) 0%, rgba(10, 12, 18, 0.6) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        
+        /* Tech corners */
+        .cyber-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 10px; height: 10px;
+            border-top: 1px solid rgba(0,243,255,0.3); border-left: 1px solid rgba(0,243,255,0.3);
+        }
+        .cyber-card::after {
+            content: ''; position: absolute; bottom: 0; right: 0;
+            width: 10px; height: 10px;
+            border-bottom: 2px solid rgba(0,243,255,0.5); border-right: 2px solid rgba(0,243,255,0.5);
+            opacity: 0.5;
+        }
+        .cyber-card:hover {
+            border-color: rgba(0, 243, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px -10px rgba(0, 243, 255, 0.1);
+        }
+        .cyber-card:hover::after { opacity: 1; border-color: #00f3ff; width: 20px; height: 20px; transition: 0.3s; }
+
+        /* --- BUTTONS --- */
+        .cyber-btn {
+            position: relative;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        
+        .cyber-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.4), transparent);
+            transition: 0.4s;
+        }
+
+        .cyber-btn:hover {
+            background: #00f3ff;
+            color: #000;
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4);
+        }
+        .cyber-btn:hover::before { left: 100%; }
+
+        /* --- TERMINAL WINDOW --- */
+        .terminal-ui {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+        }
+        .terminal-header {
+            background: #161b22;
+            padding: 8px 12px;
+            display: flex; gap: 6px;
+            border-bottom: 1px solid #30363d;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-r { background: #ff5f56; }
+        .dot-y { background: #ffbd2e; }
+        .dot-g { background: #27c93f; }
+
+        /* --- VIEW MANAGEMENT --- */
+        .view-section {
+            position: absolute;
+            inset: 0;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            flex-direction: column;
+        }
+        .view-section.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* --- SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #050507; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f3ff; }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(0, 243, 255, 0.1), transparent);
+            border-left: 3px solid #00f3ff;
+            color: #00f3ff;
+            text-shadow: 0 0 8px rgba(0,243,255,0.5);
+        }
+        
+        /* --- UTILS --- */
+        .text-code-key { color: #ff7b72; } /* red/pink */
+        .text-code-str { color: #a5d6ff; } /* blue */
+        .text-code-fn { color: #d2a8ff; } /* purple */
+        .text-code-com { color: #8b949e; font-style: italic; } /* comment */
+
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-cyber-cyan selection:text-black">
+
+    <!-- Background FX -->
+    <div class="scanlines"></div>
+    <div class="cyber-bg"></div>
+
+    <!-- ================= VIEW 1: LANDING PAGE ================= -->
+    <section id="landing-view" class="view-section active overflow-y-auto">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-50 border-b border-white/5 bg-cyber-bg/80 backdrop-blur-md">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-cyber-cyan/10 border border-cyber-cyan rounded flex items-center justify-center">
+                        <i data-lucide="cpu" class="w-6 h-6 text-cyber-cyan"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white tracking-[0.15em] leading-none">NETSEC</h1>
+                        <span class="text-[10px] text-cyber-purple font-mono tracking-widest">ACADEMY_OPERATOR v2.0</span>
+                    </div>
+                </div>
+                <button onclick="bootSystem()" class="group flex items-center gap-2 text-xs font-mono text-cyber-cyan hover:text-white transition">
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity animate-blink">></span> [ INITIALIZE_SYSTEM ]
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero -->
+        <div class="relative pt-24 pb-20">
+            <div class="container mx-auto max-w-7xl px-6 grid grid-cols-1 md:grid-cols-2 items-center gap-16">
+                
+                <div class="animate-fade-in">
+                    <div class="inline-block px-3 py-1 mb-4 border border-cyber-green/30 rounded-full bg-cyber-green/5 text-cyber-green text-xs font-mono tracking-widest">
+                        SYSTEM STATUS: ONLINE
+                    </div>
+                    <h2 class="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                        MASTER THE <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-white to-cyber-purple animate-pulse">DIGITAL REALM</span>
+                    </h2>
+                    <p class="text-lg text-gray-400 mb-10 max-w-lg font-mono border-l-2 border-cyber-purple pl-6 py-2">
+                        > Interactive training modules.<br>
+                        > Real-time packet visualization.<br>
+                        > Advanced cyber warfare tactics.
+                    </p>
+                    <button onclick="bootSystem()" class="cyber-btn px-10 py-4 text-lg rounded-sm group">
+                        ENTER_CONSTRUCT <i data-lucide="arrow-right" class="inline w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                </div>
+
+                <!-- Decorative Graphic -->
+                <div class="relative animate-fade-in hidden md:block" style="animation-delay: 0.2s;">
+                     <div class="absolute -inset-10 bg-cyber-cyan/10 blur-3xl -z-10 rounded-full"></div>
+                     <div class="grid grid-cols-2 gap-4 opacity-80">
+                         <div class="cyber-card h-32 rounded-lg border-cyber-purple/50 flex items-center justify-center">
+                             <i data-lucide="shield-check" class="w-12 h-12 text-cyber-purple"></i>
+                         </div>
+                         <div class="cyber-card h-32 rounded-lg border-cyber-cyan/50 flex items-center justify-center translate-y-8">
+                             <i data-lucide="globe" class="w-12 h-12 text-cyber-cyan"></i>
+                         </div>
+                         <div class="cyber-card h-32 rounded-lg border-cyber-green/50 flex items-center justify-center -translate-y-8">
+                             <i data-lucide="terminal" class="w-12 h-12 text-cyber-green"></i>
+                         </div>
+                         <div class="cyber-card h-32 rounded-lg border-cyber-red/50 flex items-center justify-center">
+                             <i data-lucide="lock" class="w-12 h-12 text-cyber-red"></i>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= VIEW 2: APP INTERFACE ================= -->
+    <div id="app-interface" class="view-section hidden flex-row h-screen w-full">
+        
+        <!-- Sidebar -->
+        <aside class="w-80 glass-panel flex flex-col z-20 h-full shrink-0 transition-all duration-300" id="sidebar">
+            <div class="p-6 border-b border-white/5 cursor-pointer hover:bg-white/5 transition" onclick="loadModule('dashboard')">
+                <h2 class="text-xl font-bold text-white flex items-center gap-3 tracking-wider">
+                    <div class="w-8 h-8 rounded bg-gradient-to-br from-cyber-cyan to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+                        <i data-lucide="cpu" class="text-black w-5 h-5"></i>
+                    </div>
+                    NETSEC<span class="text-cyber-purple text-xs font-mono mt-1">OS</span>
+                </h2>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
+                
+                <div>
+                    <div class="mb-3 px-3 text-[10px] font-bold text-cyber-cyan uppercase tracking-widest font-mono opacity-70">
+                        Mainframe
+                    </div>
+                    <div class="nav-item active mb-1 p-3 rounded-md cursor-pointer flex items-center text-sm font-bold tracking-wide transition-all hover:bg-white/5 text-gray-300 hover:text-white" id="nav-dashboard" onclick="loadModule('dashboard')">
+                        <i data-lucide="layout-grid" class="w-4 h-4 mr-3"></i> DASHBOARD
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mb-3 px-3 text-[10px] font-bold text-cyber-purple uppercase tracking-widest font-mono opacity-70">
+                        Academy Curriculum
+                    </div>
+                    <div id="curriculum-nav" class="space-y-1">
+                        <!-- Generated via JS -->
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mb-3 px-3 text-[10px] font-bold text-cyber-green uppercase tracking-widest font-mono opacity-70">
+                        Diagnostic Tools
+                    </div>
+                    <div class="nav-item p-3 rounded-md cursor-pointer flex items-center text-sm font-bold tracking-wide transition-all hover:bg-white/5 text-gray-300 hover:text-white" id="nav-tool-osi" onclick="loadOSITool()">
+                        <i data-lucide="layers" class="w-4 h-4 mr-3"></i> OSI INSPECTOR
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-white/5 bg-black/20">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 text-xs font-mono text-cyber-green">
+                        <div class="w-2 h-2 rounded-full bg-cyber-green animate-pulse shadow-[0_0_10px_#00ff9f]"></div>
+                        <span>SECURE_LINK_ESTABLISHED</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 relative overflow-y-auto bg-black/40 scrollbar-thin scrollbar-thumb-cyber-cyan/20">
+            <div class="max-w-6xl mx-auto p-8 md:p-12 pb-32">
+                
+                <!-- DASHBOARD VIEW -->
+                <div id="dashboard-view" class="animate-fade-in">
+                    <header class="mb-10 pb-6 border-b border-white/10 flex justify-between items-end">
+                        <div>
+                            <h1 class="text-4xl font-bold text-white mb-2 font-sans tracking-wide">OPERATOR DASHBOARD</h1>
+                            <p class="text-gray-400 font-mono text-sm">> Welcome back, Cadet. Encryption keys verified.</p>
+                        </div>
+                        <div class="text-right hidden md:block">
+                            <div class="text-xs text-gray-500 font-mono">SESSION_ID</div>
+                            <div class="text-cyber-cyan font-mono">0x9F-2A-7C</div>
+                        </div>
+                    </header>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Progress -->
+                        <div class="cyber-card p-8 rounded-xl md:col-span-2">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h3 class="text-cyber-cyan font-mono text-xs mb-1 tracking-widest">ACADEMY STATUS</h3>
+                                    <h2 class="text-2xl font-bold text-white">Course Progress</h2>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-cyber-cyan/10 flex items-center justify-center">
+                                    <i data-lucide="activity" class="text-cyber-cyan w-5 h-5"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-end gap-3 mb-4">
+                                <span id="progress-percent" class="text-6xl font-bold text-white leading-none">0</span>
+                                <span class="text-xl text-gray-500 font-mono mb-1">%</span>
+                            </div>
+                            
+                            <div class="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+                                <div id="progress-bar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-cyber-cyan to-blue-500 shadow-[0_0_15px_rgba(0,243,255,0.5)] transition-all duration-1000" style="width: 0%"></div>
+                            </div>
+                            <div class="mt-4 flex justify-between text-xs text-gray-500 font-mono">
+                                <span>Rank: <span class="text-white">SCRIPT_KIDDIE</span></span>
+                                <span>Target: <span class="text-cyber-purple">ELITE_HACKER</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Current Mission -->
+                        <div class="cyber-card p-8 rounded-xl border-cyber-purple/30 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-cyber-purple font-mono text-xs mb-4 tracking-widest flex items-center gap-2">
+                                    <span class="w-2 h-2 bg-cyber-purple rounded-full animate-pulse"></span>
+                                    CURRENT OBJECTIVE
+                                </h3>
+                                <div id="next-lesson-title" class="text-xl text-white font-bold leading-tight">
+                                    Initializing...
+                                </div>
+                            </div>
+                            <button onclick="startCourse()" class="w-full mt-8 bg-white text-black py-3 font-bold font-mono hover:bg-cyber-purple hover:text-white transition-colors flex items-center justify-center gap-2 rounded-sm">
+                                <i data-lucide="play" class="w-4 h-4"></i> RESUME
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LESSON VIEW -->
+                <div id="lesson-view" class="hidden animate-fade-in pb-20">
+                    <!-- Injected via JS -->
+                </div>
+
+                <!-- OSI TOOL VIEW -->
+                <div id="osi-view" class="hidden animate-fade-in pb-20">
+                    <header class="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+                        <div>
+                            <h1 class="text-3xl font-bold text-white font-sans tracking-wide">OSI VISUALIZER</h1>
+                            <p class="text-cyber-cyan text-xs font-mono mt-1 tracking-widest">LAYER INSPECTION PROTOCOL v4.0</p>
+                        </div>
+                        <button onclick="loadModule('dashboard')" class="text-gray-400 hover:text-white flex items-center gap-2 font-mono text-sm px-4 py-2 rounded hover:bg-white/5 transition">
+                            <i data-lucide="x" class="w-4 h-4"></i> CLOSE_TOOL
+                        </button>
+                    </header>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left: The Stack -->
+                        <div class="space-y-3" id="stack-container">
+                            <!-- Generated JS Items -->
+                        </div>
+
+                        <!-- Right: Detail Panel -->
+                        <div class="lg:col-span-2">
+                            <div id="osi-detail-panel" class="cyber-card p-10 h-full flex flex-col items-center justify-center text-center min-h-[600px] rounded-xl bg-black/80 border-dashed border-2 border-gray-800">
+                                <div class="w-24 h-24 rounded-full bg-gray-800/50 flex items-center justify-center mb-6 animate-pulse">
+                                    <i data-lucide="scan" class="w-10 h-10 text-gray-600"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-500 mb-2">AWAITING INPUT</h3>
+                                <p class="font-mono text-gray-600 text-sm">SELECT A LAYER FROM THE STACK TO BEGIN ANALYSIS</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+<script>
+    // --- 1. CURRICULUM DATA (EXPANDED) ---
+    const curriculum = [
+        {
+            id: 1,
+            title: "Network Topologies",
+            level: "beginner",
+            icon: "share-2",
+            content: `
+                <h2 class="text-3xl font-bold text-white mb-6 font-sans">How Computers Connect</h2>
+                <p class="mb-6 text-gray-300 leading-relaxed text-lg">
+                    <strong>Topology</strong> refers to the layout of a network. It defines how different nodes (computers, printers, routers) are connected and how they communicate with each other. Choosing the right topology depends on cost, scalability, and reliability requirements.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <!-- Star Topology Visual -->
+                    <div class="bg-black/40 border border-cyber-cyan/30 p-6 rounded-xl relative overflow-hidden group hover:border-cyber-cyan/60 transition-colors">
+                        <h3 class="text-cyber-cyan font-mono text-sm mb-6 text-center tracking-widest">STAR TOPOLOGY (Most Common)</h3>
+                        <div class="relative h-48 w-full flex items-center justify-center">
+                            <div class="absolute w-10 h-10 bg-cyber-purple rounded-lg z-10 shadow-[0_0_20px_#bc13fe] flex items-center justify-center text-xs font-bold text-black border border-white">SW</div>
+                            <div class="absolute w-32 h-0.5 bg-gray-700 rotate-0 group-hover:bg-cyber-cyan/50 transition-colors duration-1000"></div>
+                            <div class="absolute w-32 h-0.5 bg-gray-700 rotate-45 group-hover:bg-cyber-cyan/50 transition-colors duration-1000"></div>
+                            <div class="absolute w-32 h-0.5 bg-gray-700 rotate-90 group-hover:bg-cyber-cyan/50 transition-colors duration-1000"></div>
+                            <div class="absolute w-32 h-0.5 bg-gray-700 rotate-[135deg] group-hover:bg-cyber-cyan/50 transition-colors duration-1000"></div>
+                            <div class="absolute w-4 h-4 bg-cyber-cyan rounded-full border border-black" style="top: 20px; left: 50%; transform: translateX(-50%)"></div>
+                            <div class="absolute w-4 h-4 bg-cyber-cyan rounded-full border border-black" style="bottom: 20px; left: 50%; transform: translateX(-50%)"></div>
+                            <div class="absolute w-4 h-4 bg-cyber-cyan rounded-full border border-black" style="left: 20px; top: 50%; transform: translateY(-50%)"></div>
+                            <div class="absolute w-4 h-4 bg-cyber-cyan rounded-full border border-black" style="right: 20px; top: 50%; transform: translateY(-50%)"></div>
+                        </div>
+                        <div class="bg-cyber-cyan/5 p-3 rounded mt-4 border-l-2 border-cyber-cyan">
+                            <p class="text-xs text-gray-300"><strong>Pros:</strong> Easy to manage. If one cable breaks, only that device goes offline.<br><strong>Cons:</strong> If the central Switch fails, the whole network dies.</p>
+                        </div>
+                    </div>
+                    <!-- Mesh Topology Visual -->
+                    <div class="bg-black/40 border border-cyber-green/30 p-6 rounded-xl relative overflow-hidden group hover:border-cyber-green/60 transition-colors">
+                        <h3 class="text-cyber-green font-mono text-sm mb-6 text-center tracking-widest">FULL MESH TOPOLOGY (Military/Critical)</h3>
+                        <div class="relative h-48 w-full flex items-center justify-center">
+                            <div class="absolute w-4 h-4 bg-cyber-green rounded-full border border-black z-10" style="top: 30px; left: 50%; transform: translateX(-50%)"></div>
+                            <div class="absolute w-4 h-4 bg-cyber-green rounded-full border border-black z-10" style="bottom: 30px; left: 25%"></div>
+                            <div class="absolute w-4 h-4 bg-cyber-green rounded-full border border-black z-10" style="bottom: 30px; right: 25%"></div>
+                            <div class="absolute w-[120px] h-0.5 bg-gray-700 top-[85px] -left-[15px] rotate-[60deg] group-hover:bg-cyber-green/50 transition"></div>
+                            <div class="absolute w-[120px] h-0.5 bg-gray-700 top-[85px] left-[45px] -rotate-[60deg] group-hover:bg-cyber-green/50 transition"></div>
+                            <div class="absolute w-[140px] h-0.5 bg-gray-700 bottom-[38px] left-[50%] -translate-x-1/2 group-hover:bg-cyber-green/50 transition"></div>
+                        </div>
+                         <div class="bg-cyber-green/5 p-3 rounded mt-4 border-l-2 border-cyber-green">
+                            <p class="text-xs text-gray-300"><strong>Pros:</strong> Extremely reliable. Data can take multiple paths.<br><strong>Cons:</strong> Very expensive cabling and setup.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                    <h3 class="text-white font-bold mb-2">Other Topologies</h3>
+                    <ul class="list-disc pl-5 space-y-2 text-gray-400 text-sm">
+                        <li><strong>Bus:</strong> A single main cable (backbone) connects all devices. Cheap but prone to collisions. If the backbone breaks, the network fails.</li>
+                        <li><strong>Ring:</strong> Devices are connected in a closed loop. Data travels in one direction. Legacy technology (Token Ring).</li>
+                        <li><strong>Hybrid:</strong> A mix of two or more topologies, commonly found in large enterprises (e.g., Star-Bus).</li>
+                    </ul>
+                </div>
+            `,
+            quiz: { question: "Which topology offers the highest redundancy?", options: ["Star", "Bus", "Ring", "Mesh"], answer: 3 }
+        },
+        {
+            id: 2,
+            title: "IP Addressing & Binary",
+            level: "beginner",
+            icon: "hash",
+            content: `
+                <h2 class="text-3xl font-bold text-white mb-6 font-sans">The Digital Mailing Address</h2>
+                <p class="mb-6 text-gray-300">An IP address identifies a device on a network. IPv4 addresses are 32-bit numbers displayed as four decimal blocks (octets). Computers read these as binary (1s and 0s).</p>
+
+                <div class="cyber-card p-8 mb-8 rounded-xl border-cyber-cyan/20">
+                    <div class="flex justify-between items-center font-mono text-2xl md:text-4xl font-bold mb-4 tracking-wider">
+                        <span class="text-cyber-cyan">192</span><span class="text-gray-600">.</span>
+                        <span class="text-cyber-purple">168</span><span class="text-gray-600">.</span>
+                        <span class="text-cyber-green">1</span><span class="text-gray-600">.</span>
+                        <span class="text-cyber-yellow">15</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center font-mono text-xs text-gray-500">
+                        <div class="bg-black/40 p-2 rounded hover:text-white transition">11000000</div>
+                        <div class="bg-black/40 p-2 rounded hover:text-white transition">10101000</div>
+                        <div class="bg-black/40 p-2 rounded hover:text-white transition">00000001</div>
+                        <div class="bg-black/40 p-2 rounded hover:text-white transition">00001111</div>
+                    </div>
+                </div>
+
+                <h3 class="text-white font-bold mb-4 font-mono text-lg">Binary Conversion Chart</h3>
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-center text-sm font-mono border border-gray-700">
+                        <tr class="bg-gray-800 text-cyber-cyan"><td>128</td><td>64</td><td>32</td><td>16</td><td>8</td><td>4</td><td>2</td><td>1</td></tr>
+                        <tr class="bg-black text-white"><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+                        <tr class="bg-gray-900 text-gray-400"><td colspan="8" class="py-2 text-left pl-4">128 + 64 = 192</td></tr>
+                    </table>
+                </div>
+
+                <h3 class="text-white font-bold mb-4 font-mono text-lg">Public vs Private IPs (RFC 1918)</h3>
+                <p class="text-gray-400 text-sm mb-4">Private IPs are used inside a LAN (Local Area Network) and are not routable on the internet. A router uses NAT (Network Address Translation) to convert them to a Public IP.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
+                    <div class="bg-black/40 p-4 rounded border border-gray-700 hover:border-cyber-purple transition">
+                        <div class="text-white font-bold mb-1">Class A</div>
+                        <div class="text-cyber-cyan font-bold">10.0.0.0 - 10.255.255.255</div>
+                        <div class="text-gray-500 text-xs mt-2">Large Enterprises</div>
+                    </div>
+                    <div class="bg-black/40 p-4 rounded border border-gray-700 hover:border-cyber-purple transition">
+                        <div class="text-white font-bold mb-1">Class B</div>
+                        <div class="text-cyber-cyan font-bold">172.16.0.0 - 172.31.255.255</div>
+                        <div class="text-gray-500 text-xs mt-2">Universities / Labs</div>
+                    </div>
+                    <div class="bg-black/40 p-4 rounded border border-gray-700 hover:border-cyber-purple transition">
+                        <div class="text-white font-bold mb-1">Class C</div>
+                        <div class="text-cyber-cyan font-bold">192.168.0.0 - 192.168.255.255</div>
+                        <div class="text-gray-500 text-xs mt-2">Home Networks</div>
+                    </div>
+                </div>
+            `,
+            quiz: { question: "Which is a Private IP address?", options: ["8.8.8.8", "172.20.10.5", "142.250.1.1", "1.1.1.1"], answer: 1 }
+        },
+        {
+            id: 3,
+            title: "Advanced CLI Recon",
+            level: "beginner",
+            icon: "terminal",
+            content: `
+                <h2 class="text-3xl font-bold text-white mb-6 font-sans">The Hacker's Console</h2>
+                <p class="text-gray-300 mb-6">Command Line Interface (CLI) tools are the primary weapons for network reconnaissance. These tools allow you to query the network state directly.</p>
+                
+                <div class="terminal-ui mb-6">
+                    <div class="terminal-header"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span class="text-gray-500 text-xs ml-2">cmd.exe - Administrator</span></div>
+                    <div class="p-4 text-sm">
+                        <div class="mb-4 group">
+                            <div class="text-code-com">// 1. Check Connectivity & Latency</div>
+                            <span class="text-cyber-green">user@net:~$</span> <span class="text-white">ping 8.8.8.8</span>
+                            <div class="text-gray-500 text-xs hidden group-hover:block pl-4 transition">Sends ICMP packets to Google DNS. Checks if the host is alive.</div>
+                        </div>
+                        <div class="mb-4 group">
+                            <div class="text-code-com">// 2. Trace the Path (Hops)</div>
+                            <span class="text-cyber-green">user@net:~$</span> <span class="text-white">tracert google.com</span>
+                            <div class="text-gray-500 text-xs hidden group-hover:block pl-4 transition">Shows every router (hop) your packet hits on the way to the destination. Great for finding where a connection breaks.</div>
+                        </div>
+                        <div class="mb-4 group">
+                            <div class="text-code-com">// 3. View ARP Cache (Local Neighbors)</div>
+                            <span class="text-cyber-green">user@net:~$</span> <span class="text-white">arp -a</span>
+                            <div class="text-gray-500 text-xs hidden group-hover:block pl-4 transition">Maps IP addresses to MAC addresses (Hardware IDs) for devices on your local network.</div>
+                        </div>
+                        <div class="mb-4 group">
+                            <div class="text-code-com">// 4. Active Connections & Ports</div>
+                            <span class="text-cyber-green">user@net:~$</span> <span class="text-white">netstat -ano</span>
+                            <div class="text-gray-500 text-xs hidden group-hover:block pl-4 transition">Shows all open ports and connected IPs. The '-o' flag shows the Process ID (PID) using the port.</div>
+                        </div>
+                        <div class="group">
+                            <div class="text-code-com">// 5. DNS Lookup</div>
+                            <span class="text-cyber-green">user@net:~$</span> <span class="text-white">nslookup facebook.com</span>
+                            <div class="text-gray-500 text-xs hidden group-hover:block pl-4 transition">Queries the DNS server to find the IP address of a domain name.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-cyber-red/10 border-l-4 border-cyber-red p-4 rounded">
+                    <h4 class="text-cyber-red font-bold text-sm mb-1">SECURITY ALERT:</h4>
+                    <p class="text-gray-400 text-sm">If you run <code>netstat</code> and see a connection to a foreign IP on a weird port (like 4444 or 6667) that you didn't authorize, your machine might be compromised (C2 Beaconing).</p>
+                </div>
+            `,
+            quiz: { question: "Which command shows the path of routers to a destination?", options: ["PING", "IPCONFIG", "TRACERT", "NETSTAT"], answer: 2 }
+        },
+        {
+            id: 4,
+            title: "TCP/UDP & Ports",
+            level: "intermediate",
+            icon: "handshake",
+            content: `
+                <h2 class="text-3xl font-bold text-white mb-6 font-sans">Transport Layer Protocols</h2>
+                <p class="text-gray-300 mb-6">The Transport Layer (Layer 4) handles how data is moved. The two main protocols are TCP (Transmission Control Protocol) and UDP (User Datagram Protocol).</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="cyber-card p-6 rounded-xl border-t-4 border-t-cyber-cyan">
+                        <h3 class="text-cyber-cyan font-bold mb-2 text-xl">TCP (Connection-Oriented)</h3>
+                        <p class="text-xs text-gray-400 mb-4 italic">"I care about every single byte."</p>
+                        <ul class="space-y-2 text-sm text-gray-300">
+                            <li><i data-lucide="check" class="w-4 h-4 inline"></i> <strong>Reliable:</strong> Resends lost packets.</li>
+                            <li><i data-lucide="check" class="w-4 h-4 inline"></i> <strong>Ordered:</strong> Reassembles packets in order (1, 2, 3).</li>
+                            <li><i data-lucide="check" class="w-4 h-4 inline"></i> <strong>Heavy:</strong> Slower due to overhead.</li>
+                        </ul>
+                        <div class="mt-4 bg-black/40 p-3 rounded border border-cyber-cyan/20">
+                            <h4 class="text-xs font-bold text-cyber-cyan mb-1">THE 3-WAY HANDSHAKE:</h4>
+                            <ol class="list-decimal list-inside text-xs text-gray-400 font-mono">
+                                <li><strong>SYN:</strong> "Hello, can we talk?"</li>
+                                <li><strong>SYN-ACK:</strong> "Yes, I'm ready."</li>
+                                <li><strong>ACK:</strong> "Okay, sending data now."</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="cyber-card p-6 rounded-xl border-t-4 border-t-cyber-red">
+                        <h3 class="text-cyber-red font-bold mb-2 text-xl">UDP (Connectionless)</h3>
+                        <p class="text-xs text-gray-400 mb-4 italic">"Fire and forget!"</p>
+                        <ul class="space-y-2 text-sm text-gray-300">
+                            <li><i data-lucide="x" class="w-4 h-4 inline"></i> <strong>Unreliable:</strong> If a packet drops, it's gone.</li>
+                            <li><i data-lucide="check" class="w-4 h-4 inline"></i> <strong>Fast:</strong> Low latency, no handshake.</li>
+                            <li><i data-lucide="check" class="w-4 h-4 inline"></i> <strong>Uses:</strong> VoIP, Streaming, DNS, Gaming.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 class="text-white font-bold mb-4 font-mono text-lg">Common Ports (The Apartment Numbers)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm font-mono">
+                        <thead class="bg-gray-800 text-cyber-cyan">
+                            <tr><th class="p-2">Port</th><th class="p-2">Protocol</th><th class="p-2">Usage</th></tr>
+                        </thead>
+                        <tbody class="bg-black/20 text-gray-300 divide-y divide-gray-800">
+                            <tr><td class="p-2 font-bold text-white">20/21</td><td class="p-2">FTP</td><td class="p-2">File Transfer (Unsecured)</td></tr>
+                            <tr><td class="p-2 font-bold text-white">22</td><td class="p-2">SSH</td><td class="p-2 text-cyber-green">Secure Remote Login</td></tr>
+                            <tr><td class="p-2 font-bold text-white">23</td><td class="p-2">Telnet</td><td class="p-2 text-cyber-red">Unsecured Remote Login</td></tr>
+                            <tr><td class="p-2 font-bold text-white">53</td><td class="p-2">DNS</td><td class="p-2">Name Resolution (UDP)</td></tr>
+                            <tr><td class="p-2 font-bold text-white">80</td><td class="p-2">HTTP</td><td class="p-2">Websites (Unsecured)</td></tr>
+                            <tr><td class="p-2 font-bold text-white">443</td><td class="p-2">HTTPS</td><td class="p-2 text-cyber-green">Secure Websites (TLS)</td></tr>
+                            <tr><td class="p-2 font-bold text-white">3389</td><td class="p-2">RDP</td><td class="p-2">Remote Desktop (Windows)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `,
+            quiz: { question: "Which protocol uses a 3-way handshake?", options: ["UDP", "ICMP", "TCP", "DHCP"], answer: 2 }
+        },
+        {
+            id: 5,
+            title: "DHCP & DNS",
+            level: "intermediate",
+            icon: "book",
+            content: `
+                <h2 class="text-3xl font-bold text-white mb-6 font-sans">Network Infrastructure Services</h2>
+                
+                <div class="mb-10">
+                    <h3 class="text-2xl font-bold text-white mb-4">DHCP (Dynamic Host Configuration Protocol)</h3>
+                    <p class="text-gray-300 mb-4">DHCP automatically assigns IP addresses to devices so you don't have to type them manually. It uses the <strong>DORA</strong> process.</p>
+                    <div class="space-y-3 font-mono text-sm mb-6 bg-black/20 p-6 rounded-xl border border-white/5">
+                        <div class="flex items-center gap-4"><span class="text-cyber-yellow font-bold w-24">DISCOVER</span> <span class="text-gray-400">Client broadcasts: "Is there a DHCP server here?"</span></div>
+                        <div class="flex items-center gap-4"><span class="text-cyber-cyan font-bold w-24">OFFER</span> <span class="text-gray-400">Server replies: "I can rent you 192.168.1.50 for 24 hours."</span></div>
+                        <div class="flex items-center gap-4"><span class="text-cyber-green font-bold w-24">REQUEST</span> <span class="text-gray-400">Client replies: "I accept that IP."</span></div>
+                        <div class="flex items-center gap-4"><span class="text-cyber-purple font-bold w-24">ACK</span> <span class="text-gray-400">Server confirms: "Recorded. It's yours."</span></div>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded border-l-2 border-gray-600 text-sm text-gray-400">
+                        <strong>Note:</strong> DHCP addresses are "leased". They expire. Static IPs are permanent and used for servers/printers.
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-bold text-white mb-4">DNS (Domain Name System)</h3>
+                    <p class="text-gray-300 mb-4">DNS is the phonebook of the internet. It translates human-readable names (google.com) into machine-readable IPs (142.250.1.1).</p>
+                    
+                    <h4 class="font-bold text-cyber-cyan mb-2 text-sm">Common Record Types:</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-black/40 p-3 rounded border border-gray-700">
+                            <div class="text-white font-bold">A Record</div>
+                            <div class="text-xs text-gray-400">Maps Name -> IPv4 Address</div>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded border border-gray-700">
+                            <div class="text-white font-bold">AAAA Record</div>
+                            <div class="text-xs text-gray-400">Maps Name -> IPv6 Address</div>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded border border-gray-700">
+                            <div class="text-white font-bold">CNAME</div>
+                            <div class="text-xs text-gray-400">Alias (www.site.com -> site.com)</div>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded border border-gray-700">
+                            <div class="text-white font-bold">MX Record</div>
+                            <div class="text-xs text-gray-400">Mail Exchange (Directs email traffic)</div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            quiz: { question: "Which DNS record maps a name to an IPv6 address?", options: ["A", "AAAA", "MX", "PTR"], answer: 1 }
+        },
+        { 
+            id: 6, 
+            title: "HTTP Status Codes & Methods", 
+            level: "intermediate", 
+            icon: "lock", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>Web Communication</h2>
+                <p class='text-gray-300 mb-6'>HTTP uses <strong>Methods</strong> to ask for things and <strong>Status Codes</strong> to report results.</p>
+
+                <h3 class="text-white font-bold mb-4 font-mono text-lg">HTTP Methods (Verbs)</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-center">
+                    <div class="bg-gray-800 p-3 rounded border-b-2 border-blue-500"><div class="text-blue-400 font-bold">GET</div><div class="text-xs text-gray-400">Retrieve Data</div></div>
+                    <div class="bg-gray-800 p-3 rounded border-b-2 border-green-500"><div class="text-green-400 font-bold">POST</div><div class="text-xs text-gray-400">Submit Data</div></div>
+                    <div class="bg-gray-800 p-3 rounded border-b-2 border-yellow-500"><div class="text-yellow-400 font-bold">PUT</div><div class="text-xs text-gray-400">Update Data</div></div>
+                    <div class="bg-gray-800 p-3 rounded border-b-2 border-red-500"><div class="text-red-400 font-bold">DELETE</div><div class="text-xs text-gray-400">Remove Data</div></div>
+                </div>
+
+                <h3 class="text-white font-bold mb-4 font-mono text-lg">Status Code Categories</h3>
+                <div class="space-y-4 font-mono text-sm">
+                    <div class='bg-gray-900 p-4 rounded border-l-4 border-cyber-green'>
+                        <div class='text-cyber-green font-bold text-xl'>2xx: Success</div>
+                        <ul class="list-disc pl-4 text-gray-400 mt-1">
+                            <li><strong>200 OK:</strong> Standard success.</li>
+                            <li><strong>201 Created:</strong> New resource made (after POST).</li>
+                        </ul>
+                    </div>
+                    <div class='bg-gray-900 p-4 rounded border-l-4 border-cyber-yellow'>
+                        <div class='text-cyber-yellow font-bold text-xl'>3xx: Redirection</div>
+                        <ul class="list-disc pl-4 text-gray-400 mt-1">
+                            <li><strong>301 Moved Permanently:</strong> SEO friendly.</li>
+                            <li><strong>302 Found:</strong> Temporary redirect.</li>
+                        </ul>
+                    </div>
+                    <div class='bg-gray-900 p-4 rounded border-l-4 border-cyber-orange'>
+                        <div class='text-orange-400 font-bold text-xl'>4xx: Client Error</div>
+                        <ul class="list-disc pl-4 text-gray-400 mt-1">
+                            <li><strong>400 Bad Request:</strong> You sent garbage data.</li>
+                            <li><strong>401 Unauthorized:</strong> Log in first.</li>
+                            <li><strong>403 Forbidden:</strong> Logged in, but no permission.</li>
+                            <li><strong>404 Not Found:</strong> Broken link.</li>
+                        </ul>
+                    </div>
+                    <div class='bg-gray-900 p-4 rounded border-l-4 border-cyber-red'>
+                        <div class='text-cyber-red font-bold text-xl'>5xx: Server Error</div>
+                        <ul class="list-disc pl-4 text-gray-400 mt-1">
+                            <li><strong>500 Internal Server Error:</strong> Code crashed.</li>
+                            <li><strong>503 Service Unavailable:</strong> Server overloaded/down.</li>
+                        </ul>
+                    </div>
+                </div>
+            `, 
+            quiz: { question: "Which code means you are authenticated but lack permission?", options: ["401", "403", "404", "500"], answer: 1 } 
+        },
+        { 
+            id: 7, 
+            title: "Subnetting & Network Segmentation", 
+            level: "advanced", 
+            icon: "grid", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-4'>Slicing the Network Pizza</h2>
+                <p class='text-gray-300 mb-6'>Subnetting breaks a large network into smaller, manageable, and secure pieces. We use <strong>CIDR</strong> (Classless Inter-Domain Routing) notation (e.g., /24).</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-black/40 p-5 rounded-xl border border-cyber-cyan/20">
+                        <h3 class="text-cyber-cyan font-bold mb-2">Why Subnet?</h3>
+                        <ul class="space-y-2 text-sm text-gray-400">
+                            <li><strong>Security:</strong> Isolate HR from Guests.</li>
+                            <li><strong>Performance:</strong> Reduce broadcast traffic.</li>
+                            <li><strong>Organization:</strong> Group by department.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-black/40 p-5 rounded-xl border border-cyber-purple/20">
+                        <h3 class="text-cyber-purple font-bold mb-2">Key Concepts</h3>
+                        <ul class="space-y-2 text-sm text-gray-400">
+                            <li><strong>Network ID:</strong> The "street name" (First IP).</li>
+                            <li><strong>Broadcast ID:</strong> Shouts to everyone (Last IP).</li>
+                            <li><strong>Usable Hosts:</strong> Total IPs minus 2.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 class="text-white font-bold mb-4">CIDR Cheat Sheet</h3>
+                <div class="overflow-hidden rounded-xl border border-gray-700 font-mono text-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-800 text-cyber-cyan">
+                            <tr><th class="p-3">CIDR</th><th class="p-3">Subnet Mask</th><th class="p-3">Hosts</th><th class="p-3">Context</th></tr>
+                        </thead>
+                        <tbody class="bg-black/40 text-gray-300 divide-y divide-gray-800">
+                            <tr><td class="p-3 font-bold text-white">/30</td><td class="p-3">255.255.255.252</td><td class="p-3">2</td><td class="p-3 text-xs">Point-to-Point (Router to Router)</td></tr>
+                            <tr><td class="p-3 font-bold text-white">/29</td><td class="p-3">255.255.255.248</td><td class="p-3">6</td><td class="p-3 text-xs">Small Cluster</td></tr>
+                            <tr><td class="p-3 font-bold text-white">/24</td><td class="p-3">255.255.255.0</td><td class="p-3">254</td><td class="p-3 text-xs">Standard LAN</td></tr>
+                            <tr><td class="p-3 font-bold text-white">/16</td><td class="p-3">255.255.0.0</td><td class="p-3">~65k</td><td class="p-3 text-xs">Large Campus</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `, 
+            quiz: { question: "How many usable host IPs in a /30 subnet?", options: ["4", "2", "6", "1"], answer: 1 } 
+        },
+        { 
+            id: 8, 
+            title: "Firewalls, ACLs & DMZ", 
+            level: "advanced", 
+            icon: "shield", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>Network Defense Systems</h2>
+                <p class="text-gray-300 mb-6">Firewalls control traffic flow based on rules. They act as the gatekeeper between your trusted network and the untrusted internet.</p>
+
+                <div class="flex flex-col md:flex-row items-center gap-6 mb-8">
+                    <div class="flex-1 text-gray-300 text-sm">
+                        <h3 class="text-white font-bold text-lg mb-2">Types of Firewalls</h3>
+                        <ul class="space-y-3">
+                            <li><strong class="text-cyber-cyan">Packet Filter (Stateless):</strong> Simple. Checks IP/Port. Fast but dumb.</li>
+                            <li><strong class="text-cyber-green">Stateful Inspection:</strong> Smart. Tracks connections (e.g., remembers you opened a request to Google, so it allows the reply back automatically).</li>
+                            <li><strong class="text-cyber-purple">NGFW (Next-Gen):</strong> Deep. Inspects payload (Layer 7). Can see "Facebook Games" vs "Facebook Chat".</li>
+                        </ul>
+                    </div>
+                    <div class="w-full md:w-64 h-48 bg-gray-900 rounded-lg border border-gray-700 flex items-center justify-center relative overflow-hidden">
+                        <div class="absolute w-1 bg-cyber-red h-full left-1/2"></div>
+                        <div class="absolute text-cyber-red font-bold font-mono text-xs rotate-90 bg-gray-900 px-2 left-[43%]">FIREWALL</div>
+                        <div class="absolute w-3 h-3 bg-green-500 rounded-full left-4 animate-ping"></div>
+                        <div class="absolute w-3 h-3 bg-red-500 rounded-full right-4 animate-pulse"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-800 p-4 rounded border border-gray-600">
+                        <h4 class="text-cyber-yellow font-bold mb-2">ACL (Access Control List)</h4>
+                        <p class="text-xs text-gray-400 font-mono">
+                            Router# access-list 10 deny 192.168.1.5<br>
+                            Router# access-list 10 permit any
+                        </p>
+                        <p class="text-xs text-gray-400 mt-2">A sequential list of permit/deny rules used on routers.</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded border border-gray-600">
+                        <h4 class="text-cyber-orange font-bold mb-2">DMZ (Demilitarized Zone)</h4>
+                        <p class="text-xs text-gray-400">A buffer zone between the internet and your internal network. Public servers (Web, Email) live here. If they get hacked, the internal LAN is still safe.</p>
+                    </div>
+                </div>
+            `, 
+            quiz: { question: "Where should you place a public-facing web server?", options: ["Internal LAN", "The DMZ", "Outside the Firewall", "The VLAN"], answer: 1 } 
+        },
+        { 
+            id: 9, 
+            title: "Malware Landscape", 
+            level: "advanced", 
+            icon: "skull", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>Know Your Enemy</h2>
+                <p class="text-gray-300 mb-6">Malware (Malicious Software) comes in many forms. Identification is the first step to remediation.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    <div class="cyber-card p-4 rounded border-t-4 border-cyber-red">
+                        <div class="flex justify-between mb-2"><span class="text-cyber-red font-bold">Ransomware</span><i data-lucide="lock" class="w-4 h-4 text-cyber-red"></i></div>
+                        <p class="text-xs text-gray-400">Encrypts files. Demands crypto. <br><em>Ex: WannaCry, Ryuk.</em></p>
+                    </div>
+                    <div class="cyber-card p-4 rounded border-t-4 border-cyber-orange">
+                        <div class="flex justify-between mb-2"><span class="text-cyber-orange font-bold">Trojan</span><i data-lucide="gift" class="w-4 h-4 text-cyber-orange"></i></div>
+                        <p class="text-xs text-gray-400">Disguised as legit apps. Opens backdoors. <br><em>Ex: Emotet.</em></p>
+                    </div>
+                    <div class="cyber-card p-4 rounded border-t-4 border-cyber-purple">
+                        <div class="flex justify-between mb-2"><span class="text-cyber-purple font-bold">Rootkit</span><i data-lucide="eye-off" class="w-4 h-4 text-cyber-purple"></i></div>
+                        <p class="text-xs text-gray-400">Hides deep in the OS/Kernel. Hard to remove.</p>
+                    </div>
+                    <div class="cyber-card p-4 rounded border-t-4 border-green-500">
+                        <div class="flex justify-between mb-2"><span class="text-green-500 font-bold">Worm</span><i data-lucide="bug" class="w-4 h-4 text-green-500"></i></div>
+                        <p class="text-xs text-gray-400">Self-replicating. Spreads via network without user interaction.</p>
+                    </div>
+                    <div class="cyber-card p-4 rounded border-t-4 border-blue-500">
+                        <div class="flex justify-between mb-2"><span class="text-blue-500 font-bold">Spyware</span><i data-lucide="eye" class="w-4 h-4 text-blue-500"></i></div>
+                        <p class="text-xs text-gray-400">Monitors activity. Keyloggers steal passwords.</p>
+                    </div>
+                    <div class="cyber-card p-4 rounded border-t-4 border-yellow-500">
+                        <div class="flex justify-between mb-2"><span class="text-yellow-500 font-bold">Botnet</span><i data-lucide="network" class="w-4 h-4 text-yellow-500"></i></div>
+                        <p class="text-xs text-gray-400">Army of infected zombie PCs used for DDoS.</p>
+                    </div>
+                </div>
+
+                <div class="bg-black/40 p-4 rounded border border-gray-600">
+                    <h3 class="text-white font-bold mb-2">Advanced Threat: Zero-Day</h3>
+                    <p class="text-sm text-gray-300">A vulnerability that is unknown to the vendor (Microsoft, Apple). There is no patch available yet. These are highly valuable on the black market.</p>
+                </div>
+            `, 
+            quiz: { question: "Which malware replicates itself across the network without user action?", options: ["Trojan", "Virus", "Worm", "Rootkit"], answer: 2 } 
+        },
+        { 
+            id: 10, 
+            title: "Encryption, Hashing & PKI", 
+            level: "advanced", 
+            icon: "key", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>Protecting Data</h2>
+                <p class="text-gray-300 mb-6">Cryptography ensures Confidentiality (Secrecy), Integrity (Unchanged), and Authenticity (Identity).</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="space-y-4">
+                        <h3 class="text-cyber-cyan font-bold text-xl border-b border-cyber-cyan/30 pb-2">Encryption (Two-Way)</h3>
+                        <div class="bg-gray-900 p-4 rounded border-l-2 border-cyber-cyan">
+                            <h4 class="text-white font-bold text-sm">Symmetric (Private Key)</h4>
+                            <p class="text-xs text-gray-400 mb-2">Same key locks and unlocks. Fast.</p>
+                            <div class="text-xs font-mono text-cyber-cyan">AES, DES, 3DES</div>
+                        </div>
+                        <div class="bg-gray-900 p-4 rounded border-l-2 border-cyber-cyan">
+                            <h4 class="text-white font-bold text-sm">Asymmetric (Public Key)</h4>
+                            <p class="text-xs text-gray-400 mb-2">One key locks (Public), another unlocks (Private).</p>
+                            <div class="text-xs font-mono text-cyber-cyan">RSA, ECC</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="text-cyber-purple font-bold text-xl border-b border-cyber-purple/30 pb-2">Hashing (One-Way)</h3>
+                        <div class="bg-gray-900 p-4 rounded border-l-2 border-cyber-purple">
+                            <p class="text-sm text-gray-300 mb-2">Used for passwords and file integrity checks. Cannot be reversed.</p>
+                            <div class="text-xs font-mono text-cyber-purple mb-2">Input: "Password123" -> Output: a94b8...</div>
+                            <div class="text-xs font-mono text-cyber-purple">Algos: MD5 (Weak), SHA-256 (Strong)</div>
+                        </div>
+                        <div class="bg-black/40 p-4 rounded text-xs text-gray-400">
+                            <strong>Salting:</strong> Adding random data to a password before hashing it to prevent Rainbow Table attacks.
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-white font-bold mb-2">PKI (Public Key Infrastructure)</h3>
+                <p class="text-sm text-gray-300 mb-4">The system that manages digital certificates (like the lock icon on HTTPS). A <strong>CA (Certificate Authority)</strong> is a trusted entity that issues these certificates.</p>
+            `, 
+            quiz: { question: "Which process is irreversible?", options: ["Symmetric Encryption", "Asymmetric Encryption", "Hashing", "Compression"], answer: 2 } 
+        },
+        { 
+            id: 11, 
+            title: "VPN & Tunneling", 
+            level: "expert", 
+            icon: "link-2", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>The Encrypted Tunnel</h2>
+                <p class="text-gray-300 mb-6">VPNs (Virtual Private Networks) create a secure tunnel over an insecure network (like the Internet). They use <strong>Encapsulation</strong> to wrap your data packets inside encrypted carrier packets.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-black/40 p-5 rounded-xl border border-cyber-cyan/30">
+                        <h4 class="font-bold text-white mb-2">1. Remote Access VPN</h4>
+                        <p class="text-sm text-gray-400 mb-3">For individual users connecting to the office.</p>
+                        <ul class="text-xs text-gray-500 space-y-1 font-mono">
+                            <li>- Working from a coffee shop</li>
+                            <li>- Uses Client Software (Cisco AnyConnect)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-black/40 p-5 rounded-xl border border-cyber-purple/30">
+                        <h4 class="font-bold text-white mb-2">2. Site-to-Site VPN</h4>
+                        <p class="text-sm text-gray-400 mb-3">Connects two entire networks permanently.</p>
+                        <ul class="text-xs text-gray-500 space-y-1 font-mono">
+                            <li>- NY Office <-> London Office</li>
+                            <li>- Handled by Routers/Firewalls (IPsec)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 class="text-white font-bold mb-4">Split vs Full Tunneling</h3>
+                <div class="space-y-2 text-sm text-gray-300">
+                    <div class="p-3 bg-gray-900 rounded border-l-4 border-yellow-500">
+                        <strong>Full Tunnel:</strong> ALL your traffic goes through the VPN. Secure, but slower.
+                    </div>
+                    <div class="p-3 bg-gray-900 rounded border-l-4 border-green-500">
+                        <strong>Split Tunnel:</strong> Only corporate traffic goes through VPN. Netflix/YouTube goes direct to internet. Faster.
+                    </div>
+                </div>
+
+                <h3 class="text-white font-bold mt-6 mb-2">Common Protocols</h3>
+                <div class="flex gap-2 font-mono text-xs">
+                    <span class="bg-gray-800 px-2 py-1 rounded text-cyber-cyan">IPsec</span>
+                    <span class="bg-gray-800 px-2 py-1 rounded text-cyber-cyan">OpenVPN</span>
+                    <span class="bg-gray-800 px-2 py-1 rounded text-cyber-cyan">WireGuard</span>
+                    <span class="bg-gray-800 px-2 py-1 rounded text-cyber-cyan">SSL/TLS</span>
+                </div>
+            `, 
+            quiz: { question: "Which VPN configuration sends ALL traffic through the corporate network?", options: ["Split Tunnel", "Full Tunnel", "Site-to-Site", "IPsec"], answer: 1 } 
+        },
+        { 
+            id: 12, 
+            title: "WiFi Security Standards", 
+            level: "expert", 
+            icon: "wifi", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>Securing the Airwaves</h2>
+                <p class="text-gray-300 mb-6">WiFi broadcasts data in all directions. Without encryption, anyone nearby can packet sniff your data.</p>
+
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left text-sm font-mono border border-gray-700">
+                        <thead class="bg-gray-800 text-white">
+                            <tr><th class="p-3">Standard</th><th class="p-3">Encryption</th><th class="p-3">Verdict</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800 text-gray-300 bg-black/40">
+                            <tr><td class="p-3">WEP</td><td class="p-3">RC4</td><td class="p-3 text-cyber-red font-bold">OBSOLETE / UNSAFE</td></tr>
+                            <tr><td class="p-3">WPA</td><td class="p-3">TKIP</td><td class="p-3 text-orange-500 font-bold">WEAK / LEGACY</td></tr>
+                            <tr><td class="p-3">WPA2</td><td class="p-3">AES (CCMP)</td><td class="p-3 text-cyber-green font-bold">STANDARD</td></tr>
+                            <tr><td class="p-3">WPA3</td><td class="p-3">AES-GCMP</td><td class="p-3 text-cyber-cyan font-bold">SAFEST</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-white font-bold mb-4">Common WiFi Attacks</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="bg-gray-900 p-4 rounded">
+                        <div class="text-cyber-red font-bold mb-1">Evil Twin</div>
+                        <p class="text-gray-400 text-xs">An attacker sets up a fake access point with the same name (SSID) as the real one (e.g., "Starbucks Free WiFi").</p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded">
+                        <div class="text-cyber-red font-bold mb-1">Deauthentication</div>
+                        <p class="text-gray-400 text-xs">Kicking a user off the WiFi to force them to reconnect, capturing the handshake (password hash) in the process.</p>
+                    </div>
+                    <div class="bg-gray-900 p-4 rounded">
+                        <div class="text-cyber-red font-bold mb-1">WPS Attack</div>
+                        <p class="text-gray-400 text-xs">Brute-forcing the 8-digit PIN on older routers. WPS should always be disabled.</p>
+                    </div>
+                </div>
+            `, 
+            quiz: { question: "Which encryption does WPA2 use?", options: ["RC4", "TKIP", "AES", "DES"], answer: 2 } 
+        },
+        { 
+            id: 13, 
+            title: "Linux Basics for Ops", 
+            level: "expert", 
+            icon: "terminal-square", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>The Operator's OS</h2>
+                <p class="text-gray-300 mb-6">Linux is the backbone of the internet, servers, and most cyber security tools (Kali Linux). You must master the CLI.</p>
+                
+                <div class='terminal-ui p-4 text-sm font-mono mb-8'>
+                    <div class="mb-3"><span class="text-code-fn">pwd</span> <span class="text-code-com"># Print Working Directory (Where am I?)</span></div>
+                    <div class="mb-3"><span class="text-code-fn">ls -la</span> <span class="text-code-com"># List all files (including hidden .files)</span></div>
+                    <div class="mb-3"><span class="text-code-fn">cd /var/log</span> <span class="text-code-com"># Change Directory</span></div>
+                    <div class="mb-3"><span class="text-code-fn">grep "error" syslog</span> <span class="text-code-com"># Search for "error" inside file</span></div>
+                    <div class="mb-3"><span class="text-code-fn">cat file.txt</span> <span class="text-code-com"># Read content of file</span></div>
+                    <div class="mb-3"><span class="text-code-fn">sudo</span> <span class="text-code-com"># SuperUser Do (Run as Admin/Root)</span></div>
+                    <div class="mb-3"><span class="text-code-fn">chmod +x script.sh</span> <span class="text-code-com"># Make a file executable</span></div>
+                </div>
+
+                <h3 class="text-white font-bold mb-4">File Permissions (chmod)</h3>
+                <p class="text-gray-400 text-sm mb-4">Permissions are grouped into Read (4), Write (2), and Execute (1).</p>
+                <div class="flex gap-4 text-center text-xs font-mono">
+                    <div class="bg-gray-800 p-3 rounded border border-gray-600">
+                        <div class="text-cyber-green font-bold text-lg">7</div>
+                        <div>Read+Write+Exec</div>
+                        <div>(4+2+1)</div>
+                    </div>
+                    <div class="bg-gray-800 p-3 rounded border border-gray-600">
+                        <div class="text-cyber-yellow font-bold text-lg">5</div>
+                        <div>Read+Exec</div>
+                        <div>(4+0+1)</div>
+                    </div>
+                    <div class="bg-gray-800 p-3 rounded border border-gray-600">
+                        <div class="text-cyber-red font-bold text-lg">777</div>
+                        <div>Full Access for Everyone</div>
+                        <div class="text-red-400 font-bold">DANGEROUS!</div>
+                    </div>
+                </div>
+            `, 
+            quiz: { question: "Which command searches for text within files?", options: ["find", "grep", "ls", "cat"], answer: 1 } 
+        },
+        { 
+            id: 14, 
+            title: "The Cyber Kill Chain", 
+            level: "expert", 
+            icon: "crosshair", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>Anatomy of an Attack</h2>
+                <p class="text-gray-300 mb-6">Developed by Lockheed Martin, this framework defines the 7 stages of a cyber attack. Stopping the attacker at ANY stage breaks the chain.</p>
+                
+                <div class="space-y-4 font-mono text-sm max-w-3xl">
+                    <div class="flex group">
+                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold shrink-0">1</div>
+                        <div class="ml-4 p-3 bg-black/40 rounded border-l-4 border-gray-600 w-full group-hover:border-cyber-cyan transition">
+                            <div class="font-bold text-cyber-cyan">Reconnaissance</div>
+                            <div class="text-gray-400 text-xs mt-1">Gathering intel. Scanning ports, checking LinkedIn for employees, Whois lookups.</div>
+                        </div>
+                    </div>
+                    <div class="flex group">
+                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold shrink-0">2</div>
+                        <div class="ml-4 p-3 bg-black/40 rounded border-l-4 border-gray-600 w-full group-hover:border-cyber-cyan transition">
+                            <div class="font-bold text-cyber-cyan">Weaponization</div>
+                            <div class="text-gray-400 text-xs mt-1">Creating the payload. Coupling a Remote Access Trojan (RAT) with a PDF or Office doc.</div>
+                        </div>
+                    </div>
+                    <div class="flex group">
+                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold shrink-0">3</div>
+                        <div class="ml-4 p-3 bg-black/40 rounded border-l-4 border-gray-600 w-full group-hover:border-white transition">
+                            <div class="font-bold text-white">Delivery</div>
+                            <div class="text-gray-400 text-xs mt-1">Transmission. Phishing email, USB drop, or Drive-by download.</div>
+                        </div>
+                    </div>
+                    <div class="flex group">
+                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold shrink-0">4</div>
+                        <div class="ml-4 p-3 bg-black/40 rounded border-l-4 border-gray-600 w-full group-hover:border-white transition">
+                            <div class="font-bold text-white">Exploitation</div>
+                            <div class="text-gray-400 text-xs mt-1">Triggering the bug. The code executes on the victim's computer.</div>
+                        </div>
+                    </div>
+                    <div class="flex group">
+                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold shrink-0">5</div>
+                        <div class="ml-4 p-3 bg-black/40 rounded border-l-4 border-gray-600 w-full group-hover:border-cyber-red transition">
+                            <div class="font-bold text-cyber-red">Installation</div>
+                            <div class="text-gray-400 text-xs mt-1">Persistence. Installing a backdoor/service so the attacker can come back later.</div>
+                        </div>
+                    </div>
+                    <div class="flex group">
+                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold shrink-0">6</div>
+                        <div class="ml-4 p-3 bg-black/40 rounded border-l-4 border-gray-600 w-full group-hover:border-cyber-red transition">
+                            <div class="font-bold text-cyber-red">C2 (Command & Control)</div>
+                            <div class="text-gray-400 text-xs mt-1">Phone home. The malware connects back to the attacker's server for instructions.</div>
+                        </div>
+                    </div>
+                    <div class="flex group">
+                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold shrink-0">7</div>
+                        <div class="ml-4 p-3 bg-black/40 rounded border-l-4 border-gray-600 w-full group-hover:border-cyber-red transition">
+                            <div class="font-bold text-cyber-red">Actions on Objectives</div>
+                            <div class="text-gray-400 text-xs mt-1">Game over. Data exfiltration, encryption (Ransomware), or destruction.</div>
+                        </div>
+                    </div>
+                </div>
+            `, 
+            quiz: { question: "In which phase does the attacker create the malware payload?", options: ["Reconnaissance", "Weaponization", "Delivery", "Exploitation"], answer: 1 } 
+        },
+        { 
+            id: 15, 
+            title: "SQL Injection (SQLi)", 
+            level: "expert", 
+            icon: "database", 
+            content: `
+                <h2 class='text-3xl text-white font-bold mb-6'>Database Hacking</h2>
+                <p class="text-gray-300 mb-6">SQLi occurs when an application allows user input to interfere with the backend database query. It is the #1 web vulnerability.</p>
+                
+                <div class="cyber-card p-6 rounded-xl border border-red-500/30 mb-6">
+                    <div class="mb-2 text-xs text-red-400 font-mono">VULNERABLE LOGIN FORM</div>
+                    <div class="space-y-2">
+                        <div class="text-xs text-gray-500">Username:</div>
+                        <input type="text" value="admin' OR '1'='1" class="w-full bg-black border border-red-500/50 text-white p-2 font-mono text-sm rounded" readonly>
+                        <div class="text-xs text-gray-500">Password:</div>
+                        <input type="password" value="anything" class="w-full bg-black border border-gray-700 text-gray-500 p-2 font-mono text-sm rounded" readonly>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-4 rounded border-l-4 border-cyber-green font-mono text-sm mb-6">
+                    <div class="text-gray-400 mb-2">// Backend Code Execution</div>
+                    <div class="text-white mb-2">SELECT * FROM users WHERE username = '<span class="text-cyber-red">admin' OR '1'='1</span>' AND password = '...';</div>
+                    <div class="text-gray-400 text-xs pl-4 border-l border-gray-700">
+                        1. The quote (') closes the username field.<br>
+                        2. OR '1'='1' creates a condition that is ALWAYS TRUE.<br>
+                        3. The database ignores the password check.<br>
+                        4. It logs you in as the first user (usually Admin).
+                    </div>
+                </div>
+
+                <h3 class="text-white font-bold mb-2">Types of SQLi</h3>
+                <ul class="list-disc pl-5 space-y-2 text-gray-400 text-sm">
+                    <li><strong>In-Band:</strong> Results are shown on the screen (e.g., error messages revealing data).</li>
+                    <li><strong>Blind:</strong> No error is shown. Attacker asks True/False questions to guess data.</li>
+                </ul>
+
+                <div class="mt-6 p-4 bg-cyber-green/10 rounded border border-cyber-green/30">
+                    <h4 class="text-cyber-green font-bold text-sm">THE FIX: Prepared Statements</h4>
+                    <p class="text-xs text-gray-400">Never concatenate strings. Use parameterized queries so input is treated as data, not code.</p>
+                </div>
+            `, 
+            quiz: { question: "What character is typically used to break the SQL string?", options: [";", "' (Single Quote)", "*", "%"], answer: 1 } 
+        }
+    ];
+
+    // --- 2. OSI DATA (ENRICHED) ---
+    const osiLayers = {
+        7: { 
+            name: "Application", 
+            desc: "User Interface & Network Services.", 
+            deepDive: "This is the layer the user sees. It initiates the data transfer. Protocols here define how applications talk to the network.", 
+            hardware: "Gateway / PC / Phone", 
+            troubleshoot: "Check Browser Console (F12). Check HTTP Status Codes (404, 500). Restart Application.", 
+            pdu: "Data", 
+            protocols: "HTTP, HTTPS, FTP, SSH, SMTP, DHCP, DNS", 
+            attacks: ["SQL Injection", "XSS", "Phishing", "Brute Force"], 
+            icon: "layout", 
+            headers: [{type: 'header', text: 'HTTP GET /'}, {type: 'payload', text: '{User-Agent: Mozilla...}'}] 
+        },
+        6: { 
+            name: "Presentation", 
+            desc: "Translation, Encryption & Compression.", 
+            deepDive: "Responsible for data formatting (ASCII, JPEG, MPEG) and Encryption/Decryption (SSL/TLS). It ensures the Application layer can read the data.", 
+            hardware: "Gateway / PC", 
+            troubleshoot: "Check SSL/TLS Certificate validity. Check for incompatible file formats.", 
+            pdu: "Data", 
+            protocols: "SSL, TLS, ASCII, GIF, JPEG", 
+            attacks: ["SSL Stripping", "Malware Injection"], 
+            icon: "code", 
+            headers: [{type: 'header', text: 'TLS 1.3'}, {type: 'payload', text: '[ENCRYPTED BYTES]'}] 
+        },
+        5: { 
+            name: "Session", 
+            desc: "Session Management.", 
+            deepDive: "Controls the dialogues (sessions) between computers. It establishes, manages, and terminates connections.", 
+            hardware: "Gateway / PC", 
+            troubleshoot: "Check Session Timeouts. Check Authentication tokens.", 
+            pdu: "Data", 
+            protocols: "NetBIOS, RPC, SMB", 
+            attacks: ["Session Hijacking", "Man-in-the-Middle"], 
+            icon: "users", 
+            headers: [{type: 'header', text: 'Session ID: 0xAF'}, {type: 'payload', text: 'Keep-Alive'}] 
+        },
+        4: { 
+            name: "Transport", 
+            desc: "End-to-End Delivery & Reliability.", 
+            deepDive: "Segments data and ensures it arrives. TCP (Reliable) checks for errors and resends. UDP (Fast) does not.", 
+            hardware: "Firewall / Load Balancer", 
+            troubleshoot: "Check Firewall Ports. Check for Packet Loss (Retransmissions). Netstat command.", 
+            pdu: "Segment", 
+            protocols: "TCP, UDP", 
+            attacks: ["SYN Flood (DDoS)", "Port Scanning"], 
+            icon: "package", 
+            headers: [{type: 'header', text: 'Src Port: 1045'}, {type: 'header', text: 'Dst Port: 443'}, {type: 'payload', text: 'SEQ: 101'}] 
+        },
+        3: { 
+            name: "Network", 
+            desc: "Path Determination & Logical Addressing.", 
+            deepDive: "Routers live here. They read IP addresses to find the best path across the internet for packets to travel.", 
+            hardware: "Router / L3 Switch", 
+            troubleshoot: "Ping. Traceroute. Check Routing Table. Check IP configuration.", 
+            pdu: "Packet", 
+            protocols: "IP (IPv4/IPv6), ICMP, IPSec, OSPF", 
+            attacks: ["IP Spoofing", "Ping of Death", "Route Poisoning"], 
+            icon: "globe", 
+            headers: [{type: 'header', text: 'Src IP: 192.168.1.5'}, {type: 'header', text: 'Dst IP: 8.8.8.8'}] 
+        },
+        2: { 
+            name: "Data Link", 
+            desc: "Physical Addressing (MAC).", 
+            deepDive: "Switches live here. They use MAC addresses to move frames between devices on the SAME network (LAN).", 
+            hardware: "Switch / Bridge / NIC", 
+            troubleshoot: "Check Link Lights. Check for MAC Flapping. ARP Table.", 
+            pdu: "Frame", 
+            protocols: "Ethernet, WiFi (802.11), ARP, STP", 
+            attacks: ["ARP Poisoning", "MAC Flooding", "VLAN Hopping"], 
+            icon: "network", 
+            headers: [{type: 'header', text: 'Src MAC: AA:BB:CC'}, {type: 'header', text: 'Dst MAC: 11:22:33'}] 
+        },
+        1: { 
+            name: "Physical", 
+            desc: "Binary Transmission.", 
+            deepDive: "The raw physical medium. Voltage levels, light pulses, or radio waves representing 1s and 0s.", 
+            hardware: "Cables (Cat6, Fiber), Hubs, Repeaters", 
+            troubleshoot: "Is it plugged in? Is the cable cut? Interference?", 
+            pdu: "Bit", 
+            protocols: "DSL, Bluetooth, USB", 
+            attacks: ["Wiretapping", "Jamming", "Physical Destruction"], 
+            icon: "plug", 
+            headers: [] 
+        }
+    };
+
+    // --- 3. LOGIC ---
+    let currentModuleIndex = 0;
+    let completedModules = new Set();
+
+    function init() {
+        lucide.createIcons();
+        renderCurriculumNav();
+        updateDashboard();
+        generateOSILayers();
+    }
+
+    function bootSystem() {
+        const landing = document.getElementById('landing-view');
+        const app = document.getElementById('app-interface');
+        
+        landing.style.opacity = '0';
+        setTimeout(() => {
+            landing.style.display = 'none';
+            landing.classList.remove('active');
+            
+            app.classList.remove('hidden');
+            app.style.display = 'flex';
+            void app.offsetWidth; 
+            app.classList.add('active');
+            lucide.createIcons();
+        }, 500);
+    }
+
+    function renderCurriculumNav() {
+        const container = document.getElementById('curriculum-nav');
+        container.innerHTML = '';
+        curriculum.forEach((mod, index) => {
+            const isDone = completedModules.has(index);
+            const div = document.createElement('div');
+            div.className = `nav-item p-3 rounded-md cursor-pointer flex items-center justify-between text-sm font-mono transition-all hover:bg-white/5 mb-1 ${isDone ? 'text-cyber-green' : 'text-gray-400'}`;
+            div.id = `nav-mod-${index}`;
+            div.onclick = () => loadLesson(index);
+            div.innerHTML = `<span class="flex items-center"><i data-lucide="${mod.icon}" class="w-4 h-4 mr-3"></i> ${mod.title}</span>${isDone ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}`;
+            container.appendChild(div);
+        });
+        lucide.createIcons();
+    }
+
+    function loadModule(viewName) {
+        ['dashboard-view', 'lesson-view', 'osi-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+        if (viewName === 'dashboard') {
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('nav-dashboard').classList.add('active');
+            updateDashboard();
+        } else if (viewName === 'osi') {
+            document.getElementById('osi-view').classList.remove('hidden');
+            document.getElementById('nav-tool-osi').classList.add('active');
+        }
+    }
+
+    function updateDashboard() {
+        const percent = Math.round((completedModules.size / curriculum.length) * 100);
+        document.getElementById('progress-percent').innerText = percent;
+        document.getElementById('progress-bar').style.width = `${percent}%`;
+
+        let nextIdx = 0;
+        for(let i=0; i<curriculum.length; i++) {
+            if(!completedModules.has(i)) {
+                nextIdx = i;
+                break;
+            }
+            if(i === curriculum.length -1) nextIdx = -1;
+        }
+        const titleEl = document.getElementById('next-lesson-title');
+        if (nextIdx === -1) {
+            titleEl.innerText = "ALL SYSTEMS GO. CERTIFIED.";
+            titleEl.className = "text-xl text-cyber-green font-mono mb-6";
+        } else {
+            titleEl.innerText = `> ${curriculum[nextIdx].title}`;
+            currentModuleIndex = nextIdx;
+        }
+    }
+
+    function startCourse() { loadLesson(currentModuleIndex); }
+
+    function loadLesson(index) {
+        currentModuleIndex = index;
+        loadModule('lesson');
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('lesson-view').classList.remove('hidden');
+        document.getElementById(`nav-mod-${index}`).classList.add('active');
+
+        const mod = curriculum[index];
+        const container = document.getElementById('lesson-view');
+        
+        let quizHtml = '';
+        if (mod.quiz) {
+            quizHtml = `
+                <div class="cyber-card p-8 rounded-xl mt-10 border-t-4 border-cyber-purple">
+                    <h3 class="text-cyber-purple font-bold mb-4 flex items-center gap-2 font-mono tracking-wider">
+                        <i data-lucide="help-circle" class="w-5 h-5"></i> KNOWLEDGE_CHECK
+                    </h3>
+                    <p class="mb-6 text-white text-lg">${mod.quiz.question}</p>
+                    <div id="quiz-options" class="space-y-3">
+                        ${mod.quiz.options.map((opt, i) => 
+                            `<button class="w-full text-left p-4 rounded-lg bg-black/40 border border-gray-700 hover:border-cyber-cyan hover:text-cyber-cyan hover:bg-cyber-cyan/5 transition font-mono text-sm" onclick="checkAnswer(${i}, ${mod.quiz.answer}, this)">[${i+1}] ${opt}</button>`
+                        ).join('')}
+                    </div>
+                    <div id="quiz-feedback" class="mt-6 font-bold font-mono text-sm h-6"></div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <header class="mb-10 border-b border-white/10 pb-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold font-mono bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30 uppercase tracking-widest">
+                        MODULE 0${index + 1}
+                    </span>
+                    <span class="text-gray-500 font-mono text-xs tracking-widest uppercase">${mod.level} LEVEL</span>
+                </div>
+                <h1 class="text-4xl font-bold text-white font-sans tracking-wide">${mod.title}</h1>
+            </header>
+            <div class="prose prose-invert max-w-none text-gray-300">
+                ${mod.content}
+            </div>
+            ${quizHtml}
+            <div class="flex justify-between mt-16 pt-8 border-t border-white/10">
+                <button class="text-gray-500 hover:text-white flex items-center gap-2 font-mono text-sm px-4 py-2 rounded hover:bg-white/5 transition ${index === 0 ? 'opacity-0 pointer-events-none' : ''}" onclick="prevLesson()">
+                    < PREV
+                </button>
+                <button class="bg-white text-black px-8 py-3 font-bold hover:bg-cyber-cyan hover:shadow-[0_0_20px_rgba(0,243,255,0.4)] transition font-mono text-sm rounded-sm" onclick="nextLesson()">
+                    NEXT_MODULE >
+                </button>
+            </div>
+        `;
+        lucide.createIcons();
+    }
+
+    function checkAnswer(selected, correct, btnElement) {
+        const feedback = document.getElementById('quiz-feedback');
+        const parent = document.getElementById('quiz-options');
+        Array.from(parent.children).forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+        });
+        btnElement.classList.remove('opacity-50');
+        if (selected === correct) {
+            btnElement.style.borderColor = '#00ff9f';
+            btnElement.style.color = '#00ff9f';
+            btnElement.style.background = 'rgba(0, 255, 159, 0.1)';
+            feedback.innerHTML = '<span class="text-cyber-green animate-pulse">> CORRECT. PERMISSION GRANTED.</span>';
+            markComplete(currentModuleIndex);
+        } else {
+            btnElement.style.borderColor = '#ff2a6d';
+            btnElement.style.color = '#ff2a6d';
+            btnElement.style.background = 'rgba(255, 42, 109, 0.1)';
+            feedback.innerHTML = '<span class="text-cyber-red">> ACCESS DENIED. RETRY.</span>';
+        }
+    }
+
+    function markComplete(index) {
+        completedModules.add(index);
+        renderCurriculumNav();
+        document.getElementById(`nav-mod-${index}`).classList.add('active');
+    }
+
+    function nextLesson() {
+        if (currentModuleIndex < curriculum.length - 1) {
+            markComplete(currentModuleIndex);
+            loadLesson(currentModuleIndex + 1);
+        } else {
+            loadModule('dashboard');
+        }
+    }
+    function prevLesson() { if (currentModuleIndex > 0) loadLesson(currentModuleIndex - 1); }
+
+    // --- OSI TOOL ---
+    function loadOSITool() { loadModule('osi'); }
+
+    function generateOSILayers() {
+        const stackContainer = document.getElementById('stack-container');
+        stackContainer.innerHTML = '';
+        for (let i = 7; i >= 1; i--) {
+            const layer = osiLayers[i];
+            const div = document.createElement('div');
+            let borderColor = 'border-gray-800';
+            let hoverColor = 'hover:border-white';
+            if(i==7 || i==6) hoverColor = 'hover:border-cyber-red';
+            if(i==5) hoverColor = 'hover:border-cyber-purple';
+            if(i==4) hoverColor = 'hover:border-cyber-cyan';
+            if(i==3) hoverColor = 'hover:border-cyber-green';
+            if(i==2) hoverColor = 'hover:border-cyber-yellow';
+
+            div.className = `p-4 rounded-lg bg-black/40 border ${borderColor} ${hoverColor} transition-all cursor-pointer flex justify-between items-center group border-l-4 hover:bg-white/5 hover:translate-x-1`;
+            div.onclick = () => showOSIDetail(i);
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <span class="font-mono text-2xl text-gray-600 font-bold group-hover:text-white transition">0${i}</span>
+                    <div>
+                        <div class="font-bold text-white font-mono text-sm tracking-wider">${layer.name}</div>
+                    </div>
+                </div>
+                <i data-lucide="${layer.icon}" class="w-5 h-5 text-gray-600 group-hover:text-white transition"></i>
+            `;
+            stackContainer.appendChild(div);
+        }
+        lucide.createIcons();
+    }
+
+    function showOSIDetail(id) {
+        const data = osiLayers[id];
+        const panel = document.getElementById('osi-detail-panel');
+        const attacksList = data.attacks.map(atk => `<div class="flex justify-between items-center py-2 border-b border-cyber-red/20 last:border-0"><span class="text-gray-300 text-xs font-mono">${atk}</span><i data-lucide="alert-circle" class="w-3 h-3 text-cyber-red"></i></div>`).join('');
+
+        let packetVisual = '';
+        if(id === 1) {
+             packetVisual = `<div class="mt-4 p-4 bg-black rounded border border-cyber-green/30 overflow-hidden relative h-16 flex items-center"><div class="whitespace-nowrap font-mono text-cyber-green text-lg tracking-widest animate-scan">101101001101001011101010010110001010111010100101100110110101101001101001011101010010110001010111010100101100110110101101001101001011101010010110001010111010100101100110</div></div>`;
+        } else {
+            const blocks = data.headers.map(h => `<div class="min-w-[80px] bg-gray-900 p-2 rounded border border-gray-700 text-center"><div class="font-bold mb-1 text-[10px] text-cyber-cyan">${h.type.toUpperCase()}</div><div class="text-xs font-mono text-white">${h.text}</div></div>`).join('');
+             packetVisual = `<div class="mt-6 bg-black/40 p-4 rounded border border-gray-800"><h4 class="text-xs font-bold text-gray-500 uppercase mb-3 font-mono flex justify-between"><span>PACKET_INSPECTOR</span><span class="text-cyber-cyan">${data.pdu}</span></h4><div class="flex gap-2 overflow-x-auto pb-2">${blocks}</div></div>`;
+        }
+
+        let accentColor = 'text-white';
+        if(id==4) accentColor = 'text-cyber-cyan';
+        if(id==3) accentColor = 'text-cyber-green';
+        if(id==7) accentColor = 'text-cyber-red';
+
+        panel.innerHTML = `
+            <div class="text-left w-full animate-fade-in h-full flex flex-col">
+                <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-6">
+                    <div>
+                        <span class="text-gray-500 font-mono text-xs tracking-widest">LAYER 0${id}</span>
+                        <h2 class="text-5xl font-bold text-white font-sans mt-1 tracking-wide">${data.name.toUpperCase()}</h2>
+                    </div>
+                    <div class="p-5 bg-black rounded-xl border border-gray-700 shadow-[0_0_25px_rgba(255,255,255,0.05)]">
+                        <i data-lucide="${data.icon}" class="w-10 h-10 ${accentColor}"></i>
+                    </div>
+                </div>
+                
+                <p class="text-gray-300 mb-8 text-lg leading-relaxed font-light">${data.desc}</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-gray-900/50 p-5 rounded-lg border-l-2 border-cyber-purple">
+                        <h4 class="text-xs text-cyber-purple font-bold font-mono mb-2 tracking-wider">FUNCTION</h4>
+                        <p class="text-gray-400 text-sm leading-relaxed">${data.deepDive}</p>
+                    </div>
+                    <div class="bg-gray-900/50 p-5 rounded-lg border-l-2 border-cyber-cyan">
+                        <h4 class="text-xs text-cyber-cyan font-bold font-mono mb-2 tracking-wider">HARDWARE</h4>
+                        <p class="text-gray-400 text-sm flex items-center gap-2">
+                            <i data-lucide="server" class="w-4 h-4"></i> ${data.hardware}
+                        </p>
+                    </div>
+                </div>
+
+                ${packetVisual}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    <div class="p-5 bg-black/60 border border-gray-800 rounded-lg">
+                        <h3 class="text-xs font-bold text-gray-500 uppercase mb-4 font-mono">PROTOCOLS</h3>
+                        <div class="font-mono text-cyber-cyan text-sm tracking-wide">${data.protocols}</div>
+                    </div>
+                    
+                    <div class="p-5 bg-black/60 border border-gray-800 rounded-lg relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-cyber-yellow/5 opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                        <h3 class="text-xs font-bold text-cyber-yellow uppercase mb-4 font-mono flex items-center gap-2">
+                            <i data-lucide="wrench" class="w-3 h-3"></i> TROUBLESHOOT
+                        </h3>
+                        <p class="text-xs text-gray-400 font-mono leading-relaxed">${data.troubleshoot}</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 p-5 bg-cyber-red/5 border border-cyber-red/20 rounded-lg">
+                    <h3 class="text-xs font-bold text-cyber-red uppercase mb-4 font-mono flex items-center gap-2 tracking-wider">
+                        THREATS_DETECTED
+                    </h3>
+                    <div>${attacksList}</div>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>
